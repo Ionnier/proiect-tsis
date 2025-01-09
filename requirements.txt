@@ -1,0 +1,10 @@
+# generat automat, nu as avea incredere in asa ceva
+Django==5.1.4
+huggingface_hub==0.27.0
+magic_pdf==0.10.6
+mistralai==1.2.6
+opencv_contrib_python==4.10.0.84
+opencv_python==4.10.0.84
+opencv_python_headless==4.10.0.84
+Requests==2.32.3
+python-dotenv==1.0.1

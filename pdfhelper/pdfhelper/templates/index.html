@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Helper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #upload-container {
+            text-align: center;
+        }
+
+        #progress-indicator {
+            width: 100px;
+            height: 100px;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #upload-message {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="upload-container">
+        <h1>PDF Helper</h1>
+        <form id="file-upload-form">
+            <input type="file" id="file-input" name="file" required>
+            <button type="submit">Upload</button>
+        </form>
+        <div id="progress-indicator"></div>
+        <div id="upload-message"></div>
+        <div>
+            {% for location in knownLocations %}
+            <li>
+                <a href="/{{ location }}">{{ location }}</a>
+            </li>
+                
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('file-upload-form').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById('file-input');
+            const progressIndicator = document.getElementById('progress-indicator');
+            const uploadMessage = document.getElementById('upload-message');
+
+            if (fileInput.files.length === 0) {
+                alert("Please select a file.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            // Show the progress indicator
+            progressIndicator.style.display = 'block';
+            uploadMessage.textContent = '';
+
+            try {
+                const response = await fetch('/upload/', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const json = await response.json();
+                    window.location.href = json.allLocations;
+                } else {
+                    uploadMessage.textContent = 'Error uploading file.';
+                    uploadMessage.style.color = 'red';
+                }
+            } catch (error) {
+                uploadMessage.textContent = 'An error occurred: ' + error.message;
+                uploadMessage.style.color = 'red';
+            } finally {
+                // Hide the progress indicator
+                progressIndicator.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

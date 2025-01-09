@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Helper - {{ id }}</title>
+            
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #top-section {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #pdf-container {
+            flex: 1;
+            border: 1px solid #ccc;
+        }
+
+        #chat-container {
+            flex: 1;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+        }
+
+        .chat-message.user {
+            text-align: right;
+            color: blue;
+        }
+
+        .chat-message.bot {
+            text-align: left;
+            color: green;
+        }
+
+        #chat-input {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+        }
+
+        #chat-input input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #chat-input button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #chat-input button:hover {
+            background-color: #2980b9;
+        }
+
+        #typing-indicator {
+            display: none;
+            font-style: italic;
+            color: gray;
+            margin: 10px 0;
+        }
+
+
+        textarea {
+            width: 100%;
+            height: 90%;
+            resize: none;
+        }
+
+        button {
+            margin-top: 10px;
+            align-self: flex-end;
+        }
+
+        /* Bottom Section */
+        #bottom-section {
+            display: flex;
+            height: 30%;
+            border-top: 1px solid #ccc;
+        }
+
+        .iframe-box {
+            flex: 1;
+            border: 1px solid #ccc;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="top-section">
+
+        <div id="pdf-container">
+            <iframe src="/static/{{ id }}/original.pdf/" title="Embedded PDF"></iframe>
+        </div>
+
+
+        <div id="chat-container">
+            <div id="chat-history"></div>
+
+            <div id="typing-indicator">Waiting for reply...</div>
+
+            <div id="chat-input">
+                <input type="text" id="chat-message" placeholder="Type a message...">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="bottom-section">
+        <div class="iframe-box">
+            <iframe src="/static/{{ id }}/original_layout.pdf/" title="Layout"></iframe>
+        </div>
+        <div class="iframe-box">
+            <iframe src="/static/{{ id }}/original_model.pdf/" title="Model"></iframe>
+        </div>
+        <div class="iframe-box">
+            <iframe src="/static/{{ id }}/original_spans.pdf/" title="Spans"></iframe>
+        </div>
+        <div class="iframe-box">
+            <iframe src="/static/{{ id }}/original_content_list.json/" title="Content List"></iframe>
+        </div>
+    </div>
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const chatMessageInput = document.getElementById('chat-message');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        let messagesInput = []
+
+        function addMessageToChat(content, sender = 'user') {
+            console.log(`will add message ${content}`)
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            let role = ""
+            if (sender === "user") {
+                role = "user"
+            } else {
+                role = "assistant"
+            }
+            messagesInput.push({
+                role,
+                content,
+            })
+            if (sender === "user") {
+                messageDiv.textContent = content;
+            } else {
+                const mdBlock = document.createElement("md-block")
+                mdBlock.textContent = content
+                messageDiv.appendChild(mdBlock)
+            }
+            
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight; // Scroll to the bottom
+        }
+
+        sendButton.addEventListener('click', async () => {
+            const message = chatMessageInput.value.trim();
+            if (message) {
+                try {
+                    addMessageToChat(message, 'user');
+                    chatMessageInput.value = '';
+
+                    showTypingIndicator();
+
+                    const response = await fetch('/{{ id }}/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({data: messagesInput})
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log(data)
+                        // for (const property in data.auxiliary) {
+                        //     console.log(property)
+                        //     messagesInput.append(property)
+                        // }
+                        // console.log("just text")
+                        // console.log(data.reply)
+                        addMessageToChat(data.reply, 'bot');
+                    }
+                    hideTypingIndicator();
+
+                } catch (error) {
+                    hideTypingIndicator();
+                }
+            }
+        });
+
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+
+        chatMessageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
