@@ -110,8 +110,8 @@ def pdf_info(request, pdf_id):
                         reply = {
                             "equations": equations
                         }
-                        messages.append({"role":"tool", "name":function_name, "content":json.dumps(function_result), "tool_call_id":tool_call.id})
-                        auxiliary.append({"role":"tool", "name":function_name, "content":json.dumps(function_result), "tool_call_id":tool_call.id})
+                        messages.append({"role":"tool", "name":function_name, "content":json.dumps(reply), "tool_call_id":tool_call.id})
+                        auxiliary.append({"role":"tool", "name":function_name, "content":json.dumps(reply), "tool_call_id":tool_call.id})
                     else:
                         function_result = names_to_functions[function_name](**function_params)
                         messages.append({"role":"tool", "name":function_name, "content":function_result, "tool_call_id":tool_call.id})
